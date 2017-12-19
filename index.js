@@ -101,14 +101,6 @@ const callSendAPI = (sender_psid, response) => {
     });
 
 
-    // Construct the message body
-    let request_body = {
-        "recipient": {
-            "id": sender_psid
-        },
-        "message": response
-    }
-
     // Send the HTTP request to the Messenger Platform
 
     setTimeout(() => {
@@ -117,7 +109,12 @@ const callSendAPI = (sender_psid, response) => {
             "uri": "https://graph.facebook.com/v2.6/me/messages",
             "qs": { "access_token": keys.PAGE_ACCESS_TOKEN },
             "method": "POST",
-            "json": request_body
+            "json": {
+                "recipient": {
+                    "id": sender_psid
+                },
+                "message": response
+            }
         }, (err, res, body) => {
             if (!err) {
                 console.log('message sent!')
