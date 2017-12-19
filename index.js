@@ -72,8 +72,10 @@ const handleMessage = (sender_psid, received_message) => {
             "text": `You sent the message: "${received_message.text}". Now send me an attachment!`
         }
     }
-    // Send the response message
-    callSendAPI(sender_psid, response);
+    // Send the response message after 500 milliseconds
+    setTimeout(() => {
+        callSendAPI(sender_psid, response)
+    }, 500);
 }
 
 
