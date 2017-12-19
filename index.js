@@ -1,3 +1,5 @@
+import { setTimeout } from 'timers';
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const request = require('request');
@@ -73,13 +75,32 @@ const handleMessage = (sender_psid, received_message) => {
         }
     }
     // Send the response message after 500 milliseconds
-    setTimeout(() => {
-        callSendAPI(sender_psid, response)
-    }, 500);
+    callSendAPI(sender_psid, response)
 }
 
 
 const callSendAPI = (sender_psid, response) => {
+
+    // simulate typing
+    request({
+        "uri": "https://graph.facebook.com/v2.6/me/messages",
+        "qs": { "access_token": keys.PAGE_ACCESS_TOKEN },
+        "json": {
+            "recipient": {
+                "id": sender_psid
+            },
+            "sender_action": "typing_on"
+        }
+
+    }, (err, res, body) => {
+        if (!err) {
+            console.log('message sent!')
+        } else {
+            console.error("Unable to send message:" + err);
+        }
+    });
+
+
     // Construct the message body
     let request_body = {
         "recipient": {
@@ -89,18 +110,23 @@ const callSendAPI = (sender_psid, response) => {
     }
 
     // Send the HTTP request to the Messenger Platform
-    request({
-        "uri": "https://graph.facebook.com/v2.6/me/messages",
-        "qs": { "access_token": keys.PAGE_ACCESS_TOKEN },
-        "method": "POST",
-        "json": request_body
-    }, (err, res, body) => {
-        if (!err) {
-            console.log('message sent!')
-        } else {
-            console.error("Unable to send message:" + err);
-        }
-    });
+
+    setTimeout(() => {
+
+        request({
+            "uri": "https://graph.facebook.com/v2.6/me/messages",
+            "qs": { "access_token": keys.PAGE_ACCESS_TOKEN },
+            "method": "POST",
+            "json": request_body
+        }, (err, res, body) => {
+            if (!err) {
+                console.log('message sent!')
+            } else {
+                console.error("Unable to send message:" + err);
+            }
+        });
+
+    }, 500);
 }
 
 
