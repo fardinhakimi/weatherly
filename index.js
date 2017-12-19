@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const request = require('request');
 const keys = require('./config/keys');
 const app = express();
+const apiaiApp = require('apiai')(keys.CLIENT_ACCESS_TOKEN);
 
 // serve static files
 app.use(express.static('public'));
@@ -69,40 +70,23 @@ const handleMessage = (sender_psid, received_message) => {
         // Create the payload for a basic text message, which
         // will be added to the body of our request to the Send API
         response = {
-            "text": `You sent the message: "${received_message.text}". Now send me an attachment!`
+            "text": received_message.text
         }
     }
     // Send the response message after 500 milliseconds
     callSendAPI(sender_psid, response)
 }
 
-
 const callSendAPI = (sender_psid, response) => {
 
-    // simulate typing
-    request({
-        "uri": "https://graph.facebook.com/v2.6/me/messages",
-        "qs": { "access_token": keys.PAGE_ACCESS_TOKEN },
-        "json": {
-            "recipient": {
-                "id": sender_psid
-            },
-            "sender_action": "typing_on"
-        }
-
-    }, (err, res, body) => {
-        if (!err) {
-            console.log('message sent!')
-        } else {
-            console.error("Unable to send message:" + err);
-        }
+    let request = apiaiApp.textRequest(response.text, {
+        sessionId: 'tabby_cat' // use any arbitrary id
     });
 
+    request.on('response', (response) => {
+        let aiAgentText = response.result.fulfillment.speech;
 
-    // Send the HTTP request to the Messenger Platform
-
-    setTimeout(() => {
-
+        // Send the HTTP request to the Messenger Platform
         request({
             "uri": "https://graph.facebook.com/v2.6/me/messages",
             "qs": { "access_token": keys.PAGE_ACCESS_TOKEN },
@@ -111,7 +95,7 @@ const callSendAPI = (sender_psid, response) => {
                 "recipient": {
                     "id": sender_psid
                 },
-                "message": response
+                "message": { text: aiAgentText }
             }
         }, (err, res, body) => {
             if (!err) {
@@ -121,7 +105,13 @@ const callSendAPI = (sender_psid, response) => {
             }
         });
 
-    }, 500);
+    });
+
+    request.on('error', (error) => {
+        console.log(error);
+    });
+
+    request.end();
 }
 
 
