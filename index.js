@@ -63,24 +63,14 @@ app.post('/fbwebhook', (req, res) => {
 
 const handleMessage = (sender_psid, received_message) => {
 
-    let response;
-
-    // Checks if the message contains text
-    if (received_message.text) {
-        // Create the payload for a basic text message, which
-        // will be added to the body of our request to the Send API
-        response = {
-            "text": received_message.text
-        }
-    }
     // Send the response message after 500 milliseconds
-    callSendAPI(sender_psid, response)
+    callSendAPI(sender_psid, received_message.text)
 }
 
-const callSendAPI = (sender_psid, response) => {
+const callSendAPI = (sender_psid, queryText) => {
 
-    let request = apiaiApp.textRequest(response.text, {
-        sessionId: 'tabby_cat' // use any arbitrary id
+    let request = apiaiApp.textRequest(queryText, {
+        sessionId: 'myrandom0000000session' // use any arbitrary id
     });
 
     request.on('response', (response) => {
