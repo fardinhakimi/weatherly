@@ -13,11 +13,12 @@ module.exports = (app) => {
         // Get the city and date from the request
         let city = '',
             temperature = '',
-            date = '';
+            date = '',
+            weatherCondition = '';
 
         // Get the city (if present)
-        if (req.body.result.parameters['geo-city'] || req.body.result.parameters['location']['geo-city']) {
-            city = req.body.result.parameters['geo-city'] || req.body.result.parameters['location']['geo-city'];
+        if (req.body.result.parameters['geo-city']) {
+            city = req.body.result.parameters['geo-city'];
         }
         // Get the date for the weather forecast (if present)
         if (req.body.result.parameters['date']) {
@@ -27,10 +28,13 @@ module.exports = (app) => {
         if (req.body.result.parameters['temperature']) {
             temperature = req.body.result.parameters['temperature'];
         }
+        // Get the temperature (if present)
+        if (req.body.result.parameters['weather-condition']) {
+            weatherCondition = req.body.result.parameters['weather-condition'];
+        }
 
-        console.log(temperature)
-            // Call the weather API
-        getWeatherData(city, date, temperature).then((output) => {
+        // get weather data
+        getWeatherData(city, date, temperature, weatherCondition).then((output) => {
             console.log(output);
             // Return the results of the weather API to Dialogflow
             res.setHeader('Content-Type', 'application/json');
@@ -43,13 +47,17 @@ module.exports = (app) => {
         });
     });
 
-    const getWeatherData = (city, date, temperature) => {
+    const getWeatherData = (city, date, temperature, weatherCondition) => {
         // if the date is today or null
         let today = new Date();
         let newDate = new Date(date);
 
         if (temperature != '') {
             return getTemperaterWeatherData(city, date, temperature);
+        }
+
+        if (weatherCondition != '' && date != '') {
+            return getConditionWeatherData(city, date, weatherCondition);
         }
 
         if (today.toDateString() === newDate.toDateString() || date === '') {
@@ -145,10 +153,7 @@ module.exports = (app) => {
             callWeatherAPI(city, date, 1, (err, result) => {
                 if (!err) {
                     // Create response
-
-
                     let averageTemp = ((parseInt(result['forecast']['maxtempC'])) + (parseInt(result['forecast']['mintempC']))) / 2;
-
                     let currentTempCondition = service.getTemperatureMapping(Math.ceil(averageTemp));
                     let output = `The weather stats for ${result['location']['type']} ${result['location']['query']} are:
                      Maxium temperature:  ${result['forecast']['maxtempC']}°C   or ${result['forecast']['mintempF']}°F 
@@ -163,6 +168,27 @@ module.exports = (app) => {
             });
         });
     }
+
+
+    const getConditionWeatherData = (city, date, temperature) => {
+
+        return new Promise((resolve, reject) => {
+            callWeatherAPI(city, date, 1, (err, result) => {
+                if (!err) {
+                    // Create response
+                    let output = `It is ${result['currentConditions']} in ${result['location']['type']} ${result['location']['query']} with a projected high of
+                    ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
+                    ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
+                    ${result['forecast']['date']}.`;
+                    // Resolve the promise with the output text
+                    resolve(output);
+                } else {
+                    reject(err);
+                }
+            });
+        });
+    }
+
 
     const pastWeatherData = () => {
 
