@@ -31,7 +31,7 @@ module.exports = (app) => {
 
             // use request to get the weather data
             request({
-                "uri": `${host}'/premium/v1/weather.ashx?format=json`,
+                "uri": `${host}/premium/v1/weather.ashx?format=json`,
                 "qs": {
                     "key": keys.WORLD_WEATHER_KEY,
                     "q": encodeURIComponent(city),
