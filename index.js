@@ -60,9 +60,7 @@ app.post('/fbwebhook', (req, res) => {
 
 });
 
-
 const handleMessage = (sender_psid, received_message) => {
-
     // Send the response message after 500 milliseconds
     callSendAPI(sender_psid, received_message.text)
 }
@@ -70,7 +68,7 @@ const handleMessage = (sender_psid, received_message) => {
 const callSendAPI = (sender_psid, queryText) => {
 
     let dialogFlowPromise = dialogFlowApp.textRequest(queryText, {
-        sessionId: 'myrandom0000000session' // use any arbitrary id
+        sessionId: keys.SESSION_ID // use any arbitrary id
     });
 
     dialogFlowPromise.on('response', (response) => {
@@ -103,6 +101,10 @@ const callSendAPI = (sender_psid, queryText) => {
 
     dialogFlowPromise.end();
 }
+
+// require weather api
+
+require('./weather-api')(app);
 
 // PORT
 const PORT = process.env.PORT || 3000;
