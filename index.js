@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const request = require('request');
 const keys = require('./config/keys');
 const app = express();
-const apiaiApp = require('apiai')(keys.CLIENT_ACCESS_TOKEN);
+const dialogFlowApp = require('apiai')(keys.CLIENT_ACCESS_TOKEN);
 
 // serve static files
 app.use(express.static('public'));
@@ -69,11 +69,11 @@ const handleMessage = (sender_psid, received_message) => {
 
 const callSendAPI = (sender_psid, queryText) => {
 
-    let request = apiaiApp.textRequest(queryText, {
+    let dialogFlowPromise = dialogFlowApp.textRequest(queryText, {
         sessionId: 'myrandom0000000session' // use any arbitrary id
     });
 
-    request.on('response', (response) => {
+    dialogFlowPromise.on('response', (response) => {
         let aiAgentText = response.result.fulfillment.speech;
 
         // Send the HTTP request to the Messenger Platform
@@ -97,15 +97,14 @@ const callSendAPI = (sender_psid, queryText) => {
 
     });
 
-    request.on('error', (error) => {
+    dialogFlowPromise.on('error', (error) => {
         console.log(error);
     });
 
-    request.end();
+    dialogFlowPromise.end();
 }
 
-
-// listen on given port
+// PORT
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`listening on port ${PORT}`);
