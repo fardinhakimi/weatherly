@@ -1,12 +1,65 @@
+const host = 'api.worldweatheronline.com';
+const keys = require('./config/keys');
+const request = require('request');
+
 module.exports = (app) => {
 
-    app.post('/test-webhook', (req, res) => {
+    app.post('/weather-webhook', (req, res) => {
 
-        response = "This is a sample response from your webhook!" //Default response from the webhook to show it's working
-        res.setHeader('Content-Type', 'application/json'); //Requires application/json MIME type
-        res.send({
-            "speech": response,
-            "displayText": response
+        // Get the city and date from the request
+        let city = req.body.result.parameters['geo-city'];
+        // Get the date for the weather forecast (if present)
+        let date = '';
+        if (req.body.result.parameters['date']) {
+            date = req.body.result.parameters['date'];
+        }
+        // Call the weather API
+        getWeatherData(city, date).then((output) => {
+            // Return the results of the weather API to Dialogflow
+            res.setHeader('Content-Type', 'application/json');
+            res.send(JSON.stringify({ 'speech': output, 'displayText': output }));
+        }).catch((error) => {
+            // If there is an error let the user know
+            res.setHeader('Content-Type', 'application/json');
+            res.send(JSON.stringify({ 'speech': error, 'displayText': error }));
         });
     });
+
+    const getWeatherData = (city, date) => {
+
+        return new Promise((resolve, reject) => {
+
+            // use request to get the weather data
+            request({
+                "uri": `${host}'/premium/v1/weather.ashx?format=json`,
+                "qs": {
+                    "key": keys.WORLD_WEATHER_KEY,
+                    "q": encodeURIComponent(city),
+                    "num_of_days": 1,
+                    "date": date
+                }
+
+            }, (err, res, body) => {
+
+                if (err) {
+                    reject(error);
+                } else {
+                    // After all the data has been received parse the JSON for desired data
+                    let response = JSON.parse(body);
+                    let forecast = response['data']['weather'][0];
+                    let location = response['data']['request'][0];
+                    let conditions = response['data']['current_condition'][0];
+                    let currentConditions = conditions['weatherDesc'][0]['value'];
+                    // Create response
+                    let output = `Current conditions in the ${location['type']} 
+     ${location['query']} are ${currentConditions} with a projected high of
+     ${forecast['maxtempC']}°C or ${forecast['maxtempF']}°F and a low of 
+     ${forecast['mintempC']}°C or ${forecast['mintempF']}°F on 
+     ${forecast['date']}.`;
+                    // Resolve the promise with the output text
+                    resolve(output);
+                }
+            });
+        });
+    }
 }
