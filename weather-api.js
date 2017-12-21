@@ -17,11 +17,11 @@ module.exports = (app) => {
         getWeatherData(city, date).then((output) => {
             // Return the results of the weather API to Dialogflow
             res.setHeader('Content-Type', 'application/json');
-            res.send(JSON.stringify({ 'speech': output, 'displayText': output }));
+            res.send({ 'speech': output, 'displayText': output });
         }).catch((error) => {
             // If there is an error let the user know
             res.setHeader('Content-Type', 'application/json');
-            res.send(JSON.stringify({ 'speech': error, 'displayText': error }));
+            res.send({ 'speech': error, 'displayText': error });
         });
     });
 
@@ -45,10 +45,9 @@ module.exports = (app) => {
                     reject(error);
                 } else {
                     // After all the data has been received parse the JSON for desired data
-                    let response = JSON.parse(body);
-                    let forecast = response['data']['weather'][0];
-                    let location = response['data']['request'][0];
-                    let conditions = response['data']['current_condition'][0];
+                    let forecast = body['data']['weather'][0];
+                    let location = body['data']['request'][0];
+                    let conditions = body['data']['current_condition'][0];
                     let currentConditions = conditions['weatherDesc'][0]['value'];
                     // Create response
                     let output = `Current conditions in the ${location['type']} 
