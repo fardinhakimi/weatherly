@@ -52,11 +52,11 @@ module.exports = (app) => {
         let today = new Date();
         let newDate = new Date(date);
 
-        if (temperature != '') {
+        if (temperature != '' && city != '') {
             return getTemperaterWeatherData(city, date, temperature);
         }
 
-        if (weatherCondition != '' && date != '') {
+        if (weatherCondition != '' && city != '') {
             return getConditionWeatherData(city, date, weatherCondition);
         }
 
