@@ -1,4 +1,4 @@
-const host = 'https://api.worldweatheronline.com/premium/v1/weather.ashx';
+const host = 'api.worldweatheronline.com/premium/v1/weather.ashx';
 const keys = require('./config/keys');
 const request = require('request');
 const moment = require('moment');
