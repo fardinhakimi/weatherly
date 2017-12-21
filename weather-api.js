@@ -16,8 +16,8 @@ module.exports = (app) => {
             date = '';
 
         // Get the city (if present)
-        if (req.body.result.parameters['geo-city']) {
-            city = req.body.result.parameters['geo-city'];
+        if (req.body.result.parameters['geo-city'] || req.body.result.parameters['location']['geo-city']) {
+            city = req.body.result.parameters['geo-city'] || req.body.result.parameters['location']['geo-city'];
         }
         // Get the date for the weather forecast (if present)
         if (req.body.result.parameters['date']) {
