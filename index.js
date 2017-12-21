@@ -92,7 +92,6 @@ const callSendAPI = (sender_psid, queryText) => {
                 console.error("Unable to send message:" + err);
             }
         });
-
     });
 
     dialogFlowPromise.on('error', (error) => {

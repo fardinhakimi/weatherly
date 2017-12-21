@@ -1,4 +1,4 @@
-const host = 'api.worldweatheronline.com/premium/v1/weather.ashx';
+const host = 'https://api.worldweatheronline.com/premium/v1/weather.ashx';
 const keys = require('./config/keys');
 const request = require('request');
 const moment = require('moment');
@@ -93,9 +93,9 @@ module.exports = (app) => {
                     // Create response
                     let output = `Current conditions in the ${result['location']['type']} 
                          ${result['location']['query']} are ${result['currentConditions']} with a projected high of
-                         ${result['forcast']['maxtempC']}°C or ${result['forcast']['maxtempF']}°F and a low of 
-                         ${result['forcast']['mintempC']}°C or ${result['forcast']['mintempF']}°F on 
-                         ${result['forcast']['date']}.`;
+                         ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
+                         ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
+                         ${result['forecast']['date']}.`;
                     // Resolve the promise with the output text
                     resolve(output);
                 } else {
