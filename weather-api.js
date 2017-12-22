@@ -10,11 +10,12 @@ module.exports = (app) => {
 
         console.log(`request object: ${req}`);
 
-        // Get the city and date from the request
+        // Get necessary params from the request
         let city = '',
             temperature = '',
             date = '',
-            weatherCondition = '';
+            weatherCondition = '',
+            weatherAddress = '';
 
         // Get the city (if present)
         if (req.body.result.parameters['geo-city']) {
@@ -28,13 +29,17 @@ module.exports = (app) => {
         if (req.body.result.parameters['temperature']) {
             temperature = req.body.result.parameters['temperature'];
         }
-        // Get the temperature (if present)
+        // Get the weather-condition (if present)
         if (req.body.result.parameters['weather-condition']) {
             weatherCondition = req.body.result.parameters['weather-condition'];
         }
+        // Get the address (if present)
+        if (req.body.result.parameters['address']) {
+            weatherAddress = req.body.result.parameters['address'];
+        }
 
         // get weather data
-        getWeatherData(city, date, temperature, weatherCondition).then((output) => {
+        getWeatherData(city, date, temperature, weatherCondition, weatherAddress).then((output) => {
             console.log(output);
             // Return the results of the weather API to Dialogflow
             res.setHeader('Content-Type', 'application/json');
@@ -47,18 +52,25 @@ module.exports = (app) => {
         });
     });
 
-    const getWeatherData = (city, date, temperature, weatherCondition) => {
-        // if the date is today or null
+    const getWeatherData = (city, date, temperature, weatherCondition, weatherAddress) => {
+
         let today = new Date();
         let newDate = new Date(date);
 
         if (temperature != '' && city != '') {
-            return getTemperaterWeatherData(city, date, temperature);
+            return getTemperaterWeatherData(city, date, today, newDate, temperature);
         }
 
         if (weatherCondition != '' && city != '') {
-            return getConditionWeatherData(city, date, weatherCondition);
+            return getConditionWeatherData(city, date, today, newDate, weatherCondition);
         }
+
+        /*
+        if (weatherAddress != '' && city != '') {
+            // TODO
+            return getAddressWeatherData(city, date, weatherAddress);
+        }
+        */
 
         if (today.toDateString() === newDate.toDateString() || date === '') {
             console.log("current weather data");
@@ -71,7 +83,7 @@ module.exports = (app) => {
         } else if (date != '' && newDate < today) {
             console.log("past weather data");
             let numOfDays = moment(today).diff(moment(newDate), "days") + 1;
-            //pastWeatherData(city, date, numOfDays);
+            return pastWeatherData(city, date, numOfDays);
         }
     }
 
@@ -93,13 +105,40 @@ module.exports = (app) => {
                 // After all the data has been received parse the JSON for desired data
                 let response = JSON.parse(body);
 
-                let conditions = response['data']['current_condition'][0];
-
                 let parsedReponse = {
-                    "forecast": response['data']['weather'][0],
-                    "location": response['data']['request'][0],
-                    "conditions": conditions,
-                    "currentConditions": conditions['weatherDesc'][0]['value']
+                    "forecast": undefined,
+                    "location": undefined,
+                    "conditions": undefined,
+                    "currentConditions": undefined,
+                    "weatherConditions": undefined
+                }
+
+                if (response['data']['weather']) {
+                    parsedReponse['forecast'] = response['data']['weather'][0];
+
+
+                    if (parsedReponse['forecast']['hourly']) {
+                        // based on time 1200-midday
+                        parsedReponse['weatherConditions'] = {
+                            "rain": parsedReponse['forecast']['hourly'][4]['chanceofrain'],
+                            "snow": parsedReponse['forecast']['hourly'][4]['chanceofsnow'],
+                            "wind": parsedReponse['forecast']['hourly'][4]['chanceofwindy'],
+                            "sunshine": parsedReponse['forecast']['hourly'][4]['chanceofsunshine'],
+                            "overcast": parsedReponse['forecast']['hourly'][4]['chanceofovercast'],
+                            "fog": parsedReponse['forecast']['hourly'][4]['chanceoffog'],
+                            "thunder": parsedReponse['forecast']['hourly'][4]['chanceofthunder'],
+                            "frost": parsedReponse['forecast']['hourly'][4]['chanceoffrost'],
+                        }
+                    }
+                }
+                if (response['data']['request']) {
+                    parsedReponse['location'] = response['data']['request'][0];
+                }
+                if (response['data']['current_condition']) {
+                    parsedReponse['conditions'] = response['data']['current_condition'][0];
+                    if (parsedReponse['conditions']['weatherDesc'][0]['value']) {
+                        parsedReponse['currentConditions'] = parsedReponse['conditions']['weatherDesc'][0]['value'];
+                    }
                 }
 
                 callback(undefined, parsedReponse);
@@ -114,11 +153,23 @@ module.exports = (app) => {
             callWeatherAPI(city, date, 1, (err, result) => {
                 if (!err) {
                     // Create response
-                    let output = `Current conditions in the ${result['location']['type']} 
-                         ${result['location']['query']} are ${result['currentConditions']} with a projected high of
-                         ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
-                         ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
-                         ${result['forecast']['date']}.`;
+                    let output = `Current conditions in the ${result['location']['type']}`;
+
+                    if (result['currentConditions'] != undefined) {
+                        output += ` are ${result['location']['query']} are ${result['currentConditions']}`;
+                    }
+
+                    if (result['forecast'] != undefined) {
+                        output += ` with a projected high of
+                        ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
+                        ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
+                        ${result['forecast']['date']}.`;
+                    }
+
+                    if (result['currentConditions'] === undefined && result['forecast'] === undefined) {
+                        output += ` is unknown`;
+                    }
+
                     // Resolve the promise with the output text
                     resolve(output);
                 } else {
@@ -133,11 +184,23 @@ module.exports = (app) => {
             callWeatherAPI(city, date, numOfDays, (err, result) => {
                 if (!err) {
                     // Create response
-                    let output = `The forecast for ${result['location']['type']} ${result['location']['query']} are
-                ${result['currentConditions']} with a projected high of
-                ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
-                ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
-                ${result['forecast']['date']}.`;
+
+                    let output = `The forecast for ${result['location']['type']} ${result['location']['query']}`;
+
+                    if (result['currentConditions'] != undefined) {
+                        output += ` are ${result['currentConditions']}`;
+                    }
+                    if (result['forecast'] != undefined) {
+                        output += ` with a projected high of
+                        ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
+                        ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
+                        ${result['forecast']['date']}.`;
+                    }
+
+                    if (result['forecast'] === undefined && result['currentConditions'] === undefined) {
+                        output += `is unknown`;
+                    }
+
                     // Resolve the promise with the output text
                     resolve(output);
                 } else {
@@ -147,19 +210,40 @@ module.exports = (app) => {
         });
     }
 
-    const getTemperaterWeatherData = (city, date, temperature) => {
+    const getTemperaterWeatherData = (city, date, today, newDate, temperature) => {
 
         return new Promise((resolve, reject) => {
             callWeatherAPI(city, date, 1, (err, result) => {
                 if (!err) {
                     // Create response
-                    let averageTemp = ((parseInt(result['forecast']['maxtempC'])) + (parseInt(result['forecast']['mintempC']))) / 2;
-                    let currentTempCondition = service.getTemperatureMapping(Math.ceil(averageTemp));
-                    let output = `The weather stats for ${result['location']['type']} ${result['location']['query']} are:
-                     Maxium temperature:  ${result['forecast']['maxtempC']}°C   or ${result['forecast']['mintempF']}°F 
-                     Minimum temperature: ${result['forecast']['mintempC']}°C  or ${result['forecast']['maxtempF']}°F 
-                     and an Average temperature of ${Math.ceil(averageTemp)}°C  on 
-                    ${result['forecast']['date']} which is considered to be ${currentTempCondition}`;
+                    let averageTemp = '',
+                        currentTempCondition = '',
+                        tempString = '',
+                        output = '';
+
+                    if (result['forecast'] != undefined) {
+                        averageTemp = ((parseInt(result['forecast']['maxtempC'])) + (parseInt(result['forecast']['mintempC']))) / 2;
+                        currentTempCondition = service.getTemperatureMapping(Math.ceil(averageTemp));
+
+                        if (newDate > today) {
+                            tempString = `are going to be`;
+                        } else if (newDate < today) {
+                            tempString = `were`;
+                        } else {
+                            tempString = 'are';
+                        }
+
+                        output = `The weather stats for ${result['location']['type']} ${result['location']['query']} ${tempString}:
+                          Maxium temperature: ${result['forecast']['maxtempC']}°C   or ${result['forecast']['mintempF']}°F 
+                         Minimum temperature: ${result['forecast']['mintempC']}°C  or ${result['forecast']['maxtempF']}°F 
+                        and an Average temperature of ${Math.ceil(averageTemp)}°C  on 
+                        ${result['forecast']['date']} which is considered to be ${currentTempCondition}`;
+
+                    } else {
+                        output = `The weather condition for ${result['location']['type']} ${result['location']['query']}
+                         is unknown for ${date}`;
+                    }
+
                     // Resolve the promise with the output text
                     resolve(output);
                 } else {
@@ -170,16 +254,39 @@ module.exports = (app) => {
     }
 
 
-    const getConditionWeatherData = (city, date, temperature) => {
+    const getConditionWeatherData = (city, date, today, newDate, weatherCondition) => {
 
         return new Promise((resolve, reject) => {
             callWeatherAPI(city, date, 1, (err, result) => {
                 if (!err) {
                     // Create response
-                    let output = `It is ${result['currentConditions']} in ${result['location']['type']} ${result['location']['query']} with a projected high of
-                    ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
-                    ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
-                    ${result['forecast']['date']}.`;
+
+                    let output = '';
+
+                    if (newDate > today) {
+                        output = 'It is going to be ';
+                    } else if (newDate < today) {
+                        output = 'It was ';
+                    } else {
+                        output = 'It is ';
+                    }
+
+                    if (result['currentConditions'] != undefined) {
+                        output += `${result['currentConditions']} in ${result['location']['type']} ${result['location']['query']}`;
+                    }
+
+                    if (result['weatherConditions'] != undefined) {
+                        if (result['weatherConditions'][weatherCondition]) {
+                            output += ` and a ${result['weatherConditions'][weatherCondition]}% chance of ${weatherCondition}`;
+                        }
+                    }
+
+                    if (result['forecast'] != undefined) {
+                        output += ` with a projected high of
+                        ${result['forecast']['maxtempC']}°C or ${result['forecast']['maxtempF']}°F and a low of 
+                        ${result['forecast']['mintempC']}°C or ${result['forecast']['mintempF']}°F on 
+                        ${result['forecast']['date']}.`;
+                    }
                     // Resolve the promise with the output text
                     resolve(output);
                 } else {
@@ -188,9 +295,33 @@ module.exports = (app) => {
             });
         });
     }
-
 
     const pastWeatherData = () => {
 
+        return new Promise((resolve, reject) => {
+            callWeatherAPI(city, date, numOfDays, (err, result) => {
+                if (!err) {
+                    // Create response
+                    let output = `The forecast for ${result['location']['type']} ${result['location']['query']}`;
+
+                    if (result['currentConditions'] != undefined) {
+                        output += ` were ${ result['currentConditions']}`;
+                    }
+                    if (result['forecast'] != undefined) {
+                        output += ` with a projected high of 
+                        ${ result['forecast']['maxtempC'] }°C or ${ result['forecast']['maxtempF'] }°F and a low of 
+                        ${ result['forecast']['mintempC'] }°C or ${ result['forecast']['mintempF'] }°F on 
+                        ${ result['forecast']['date'] }`;
+                    }
+                    if (result['forecast'] === undefined && result['currentConditions'] === undefined) {
+                        output += ' is unknown';
+                    }
+                    // Resolve the promise with the output text
+                    resolve(output);
+                } else {
+                    reject(err);
+                }
+            });
+        });
     }
 }

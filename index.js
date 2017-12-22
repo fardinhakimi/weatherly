@@ -61,7 +61,7 @@ app.post('/fbwebhook', (req, res) => {
 });
 
 const handleMessage = (sender_psid, received_message) => {
-    // Send the response message after 500 milliseconds
+    // Send the response message
     callSendAPI(sender_psid, received_message.text)
 }
 

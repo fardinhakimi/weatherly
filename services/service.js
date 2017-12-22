@@ -19,7 +19,7 @@ const getTemperatureMapping = (averageTemp) => {
     } else if (averageTemp >= 40 && averageTemp < 50) {
         return "extremely hot"
     } else if (averageTemp >= 50 && averageTemp <= 60) {
-        return "Extremely hot and uninhabitable"
+        return "extremely hot and uninhabitable"
     }
 }
 
