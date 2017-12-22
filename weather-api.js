@@ -153,10 +153,10 @@ module.exports = (app) => {
             callWeatherAPI(city, date, 1, (err, result) => {
                 if (!err) {
                     // Create response
-                    let output = `Current conditions in the ${result['location']['type']}`;
+                    let output = `Current conditions in the ${result['location']['type']} ${result['location']['query']}`;
 
                     if (result['currentConditions'] != undefined) {
-                        output += ` are ${result['location']['query']} are ${result['currentConditions']}`;
+                        output += ` are ${result['currentConditions']}`;
                     }
 
                     if (result['forecast'] != undefined) {
