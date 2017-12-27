@@ -234,8 +234,8 @@ module.exports = (app) => {
                         }
 
                         output = `The weather stats for ${result['location']['type']} ${result['location']['query']} ${tempString}:
-                          Maxium temperature: ${result['forecast']['maxtempC']}°C   or ${result['forecast']['mintempF']}°F 
-                         Minimum temperature: ${result['forecast']['mintempC']}°C  or ${result['forecast']['maxtempF']}°F 
+                         Maximum temperature: ${result['forecast']['maxtempC']}°C   or ${result['forecast']['maxtempF']}°F 
+                         Minimum temperature: ${result['forecast']['mintempC']}°C   or ${result['forecast']['mintempF']}°F 
                         and an Average temperature of ${Math.ceil(averageTemp)}°C  on 
                         ${result['forecast']['date']} which is considered to be ${currentTempCondition}`;
 
